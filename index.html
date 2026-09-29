@@ -102,7 +102,7 @@ button,input,select,textarea{font:inherit}.app{display:flex;min-height:100vh}.si
 </style>
 <style>
 .master-tabs{display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap}.master-tab{border:1px solid #e1e2ea;background:#fff;border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer}.master-tab.active{background:#635bff;color:#fff;border-color:#635bff}
-.inbox-layout{display:grid;grid-template-columns:390px 1fr;min-height:590px;overflow:hidden}.thread-list{border-right:1px solid #e5e6ed}.thread-item{padding:15px;border-bottom:1px solid #ececf1;cursor:pointer}.thread-item:hover,.thread-item.selected{background:#f7f7ff}.thread-top{display:flex;justify-content:space-between;gap:8px}.thread-name{font-weight:700;font-size:13px}.thread-time{font-size:11px;color:#858999}.thread-preview{font-size:12px;color:#73788a;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.thread-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.thread-detail{padding:22px}.email-bubble{border:1px solid #e5e6ed;border-radius:10px;padding:15px;margin-bottom:12px;background:#fff}.email-bubble.reply{background:#f7f7ff}.email-bubble .from{font-size:12px;font-weight:700}.email-bubble .date{font-size:11px;color:#858999;margin-left:8px}.email-bubble .body{font-size:13px;line-height:1.65;margin-top:10px;white-space:pre-line}.inbox-actions{display:flex;gap:8px;margin-top:18px}.inbox-filter{display:flex;gap:9px;margin-bottom:16px}.inbox-filter input,.inbox-filter select{padding:9px;border:1px solid #dedfe8;border-radius:8px;background:#fff}.inbox-filter input{flex:1}@media(max-width:900px){.inbox-layout{grid-template-columns:1fr}.thread-list{border-right:0;border-bottom:1px solid #e5e6ed}}
+.inbox-layout{display:grid;grid-template-columns:390px 1fr;min-height:590px;overflow:hidden}.thread-list{border-right:1px solid #e5e6ed}.thread-item{padding:15px;border-bottom:1px solid #ececf1;cursor:pointer}.thread-item:hover,.thread-item.selected{background:#f7f7ff}.thread-item.unread{background:#fbfbff}.thread-item.unread .thread-name{font-weight:850}.thread-item.unread .thread-preview{color:#303443}.unread-dot{width:7px;height:7px;border-radius:50%;background:#635bff;display:inline-block;margin-top:5px;flex:0 0 auto}.read-badge{font-size:10px;padding:3px 7px;border-radius:10px;background:#f0f1f5;color:#747989}.tag-badge{font-size:10px;padding:3px 7px;border-radius:10px;background:#f3f4f7;color:#747989}.thread-item:hover,.thread-item.selected{background:#f7f7ff}.thread-top{display:flex;justify-content:space-between;gap:8px}.thread-name{font-weight:700;font-size:13px}.thread-time{font-size:11px;color:#858999}.thread-preview{font-size:12px;color:#73788a;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.thread-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.thread-detail{padding:22px}.email-bubble{border:1px solid #e5e6ed;border-radius:10px;padding:15px;margin-bottom:12px;background:#fff}.email-bubble.reply{background:#f7f7ff}.email-bubble .from{font-size:12px;font-weight:700}.email-bubble .date{font-size:11px;color:#858999;margin-left:8px}.email-bubble .body{font-size:13px;line-height:1.65;margin-top:10px;white-space:pre-line}.inbox-actions{display:flex;gap:8px;margin-top:18px}.inbox-filter{display:flex;gap:9px;margin-bottom:16px}.inbox-filter input,.inbox-filter select{padding:9px;border:1px solid #dedfe8;border-radius:8px;background:#fff}.inbox-filter input{flex:1}@media(max-width:900px){.inbox-layout{grid-template-columns:1fr}.thread-list{border-right:0;border-bottom:1px solid #e5e6ed}}
 </style><style>
 .response-actions{margin-top:18px;padding-top:16px;border-top:1px solid #e5e6ed}
 .response-actions h4{margin:0 0 10px;font-size:13px}
@@ -219,14 +219,17 @@ const campaignLeads=[
 ];
 
 const inboxThreads=[
-{id:1,name:"John Smith",company:"Acme SaaS",email:"john@acme.example",account:"sales@outreachos.demo",campaign:"US SaaS Founders — Q4",step:"Step 2",status:"Interested",time:"10:42 AM",preview:"This sounds interesting. Can you send me a few more details?",messages:[{from:"You",date:"Sep 28 · 10:15 AM",body:"Hi John,\n\nI came across Acme SaaS and wanted to share a quick idea around improving outbound.",type:"sent"},{from:"John Smith",date:"Today · 10:42 AM",body:"This sounds interesting. Can you send me a few more details?",type:"reply"}]},
-{id:2,name:"Sarah Williams",company:"Beta Cloud",email:"sarah@beta.example",account:"chinmay@outreachos.demo",campaign:"VP Product — Design-led SaaS",step:"Step 3",status:"Replied",time:"9:18 AM",preview:"Happy to take a look. Send over your availability.",messages:[{from:"You",date:"Sep 27 · 11:00 AM",body:"Hi Sarah,\n\nJust following up on my earlier note.",type:"sent"},{from:"Sarah Williams",date:"Today · 9:18 AM",body:"Happy to take a look. Send over your availability.",type:"reply"}]},
-{id:3,name:"Mike Chen",company:"Gamma Labs",email:"mike@gamma.example",account:"growth@outreachos.demo",campaign:"US SaaS Founders — Q4",step:"Step 3",status:"Interested",time:"Yesterday",preview:"Thanks for reaching out. This is relevant to what we're working on.",messages:[{from:"You",date:"Sep 28 · 9:45 AM",body:"Hi Mike,\n\nOne more thought before I close the loop.",type:"sent"},{from:"Mike Chen",date:"Sep 28 · 4:20 PM",body:"Thanks for reaching out. This is relevant to what we're working on.",type:"reply"}]},
-{id:4,name:"David Kumar",company:"Delta AI",email:"david@delta.example",account:"sales@outreachos.demo",campaign:"Fintech GTM Leaders",step:"Step 1",status:"No Reply",time:"Sep 28",preview:"No reply yet. Next sequence step is scheduled.",messages:[{from:"You",date:"Sep 28 · 9:30 AM",body:"Hi David,\n\nI wanted to reach out regarding outbound growth at Delta AI.",type:"sent"}]},
-{id:5,name:"Lisa Morgan",company:"XYZ Systems",email:"lisa@xyz.example",account:"chinmay@outreachos.demo",campaign:"VP Product — Design-led SaaS",step:"Step 4",status:"Unsubscribe",time:"Sep 27",preview:"Please remove me from future emails.",messages:[{from:"You",date:"Sep 26 · 10:00 AM",body:"Hi Lisa,\n\nOne final thought before I close the loop.",type:"sent"},{from:"Lisa Morgan",date:"Sep 27 · 2:05 PM",body:"Please remove me from future emails.",type:"reply"}]}
-];
+{id:1,name:"John Smith",company:"Acme SaaS",email:"john@acme.example",account:"sales@outreachos.demo",campaign:"US SaaS Founders — Q4",step:"Step 2",status:"Interested",time:"10:42 AM",preview:"This sounds interesting. Can you send me a few more details?",read:false,tag:"Interested",messages:[{from:"You",date:"Sep 28 · 10:15 AM",body:"Hi John,\n\nI came across Acme SaaS and wanted to share a quick idea around improving outbound.",type:"sent"},{from:"John Smith",date:"Today · 10:42 AM",body:"This sounds interesting. Can you send me a few more details?",type:"reply"}]},
+{id:2,name:"Sarah Williams",company:"Beta Cloud",email:"sarah@beta.example",account:"chinmay@outreachos.demo",campaign:"VP Product — Design-led SaaS",step:"Step 3",status:"Replied",time:"9:18 AM",preview:"Happy to take a look. Send over your availability.",read:true,tag:"Replied",messages:[{from:"You",date:"Sep 27 · 11:00 AM",body:"Hi Sarah,\n\nJust following up on my earlier note.",type:"sent"},{from:"Sarah Williams",date:"Today · 9:18 AM",body:"Happy to take a look. Send over your availability.",type:"reply"}]},
+{id:3,name:"Mike Chen",company:"Gamma Labs",email:"mike@gamma.example",account:"growth@outreachos.demo",campaign:"US SaaS Founders — Q4",step:"Step 3",status:"Interested",time:"Yesterday",preview:"Thanks for reaching out. This is relevant to what we're working on.",read:false,tag:"Interested",messages:[{from:"You",date:"Sep 28 · 9:45 AM",body:"Hi Mike,\n\nOne more thought before I close the loop.",type:"sent"},{from:"Mike Chen",date:"Sep 28 · 4:20 PM",body:"Thanks for reaching out. This is relevant to what we're working on.",type:"reply"}]},
+{id:5,name:"Lisa Morgan",company:"XYZ Systems",email:"lisa@xyz.example",account:"chinmay@outreachos.demo",campaign:"VP Product — Design-led SaaS",step:"Step 4",status:"Unsubscribe",time:"Sep 27",preview:"Please remove me from future emails.",read:true,tag:"Unsubscribe",messages:[{from:"You",date:"Sep 26 · 10:00 AM",body:"Hi Lisa,\n\nOne final thought before I close the loop.",type:"sent"},{from:"Lisa Morgan",date:"Sep 27 · 2:05 PM",body:"Please remove me from future emails.",type:"reply"}]},
+{id:6,name:"Emily Carter",company:"Northstar AI",email:"emily@northstar.example",account:"sales@outreachos.demo",campaign:"US SaaS Founders — Q4",step:"Step 1",status:"Replied",time:"11:26 AM",preview:"Can you send me the details and pricing?",read:false,tag:"Not tagged",messages:[{from:"Emily Carter",date:"Today · 11:26 AM",body:"Can you send me the details and pricing?",type:"reply"}]},
+{id:7,name:"Raj Patel",company:"Vertex Cloud",email:"raj@vertex.example",account:"growth@outreachos.demo",campaign:"VP Product — Design-led SaaS",step:"Step 2",status:"Replied",time:"10:08 AM",preview:"Interested. What does the setup look like?",read:true,tag:"Not tagged",messages:[{from:"You",date:"Sep 28 · 10:00 AM",body:"Hi Raj,\n\nWanted to share a quick idea for your outbound workflow.",type:"sent"},{from:"Raj Patel",date:"Today · 10:08 AM",body:"Interested. What does the setup look like?",type:"reply"}]},
+{id:8,name:"Anna Wilson",company:"BrightOps",email:"anna@brightops.example",account:"chinmay@outreachos.demo",campaign:"Fintech GTM Leaders",step:"Step 1",status:"Replied",time:"Yesterday",preview:"Happy to learn more. Please send a short overview.",read:false,tag:"Not tagged",messages:[{from:"Anna Wilson",date:"Yesterday · 4:40 PM",body:"Happy to learn more. Please send a short overview.",type:"reply"}]},
+{id:9,name:"Daniel Lee",company:"ScaleStack",email:"daniel@scalestack.example",account:"sales@outreachos.demo",campaign:"US SaaS Founders — Q4",step:"Step 1",status:"Replied",time:"Sep 28",preview:"Thanks — this looks relevant to us.",read:true,tag:"Not tagged",messages:[{from:"You",date:"Sep 28 · 9:15 AM",body:"Hi Daniel,\n\nReaching out with a quick idea for your team.",type:"sent"},{from:"Daniel Lee",date:"Sep 28 · 3:30 PM",body:"Thanks — this looks relevant to us.",type:"reply"}]}
+
 inboxThreads.forEach(t=>{if(t.messages.some(m=>m.type==="reply"))t.sequenceStopped=true;});
-let selectedThread=1;let inboxFilter="All";
+let selectedThread=1;let inboxFilter="All";let inboxReadFilter="All";
 const inboxFavorites = JSON.parse(localStorage.getItem("salesgpt_inbox_favorites") || "{}");
 function toggleInboxFavorite(id){
   inboxFavorites[id] = !inboxFavorites[id];
@@ -1210,7 +1213,7 @@ function sendReply(id){
 
 function inboxPage(){
  const thread=inboxThreads.find(x=>x.id===selectedThread)||inboxThreads[0];
- const visible=inboxThreads.filter(x=>inboxFilter==="All"||inboxFilter==="Favorites" ? (inboxFilter==="Favorites"?!!inboxFavorites[x.id]:true) : x.status===inboxFilter);
+ const visible=inboxThreads.filter(x=>{ const statusOk=inboxFilter==="All"||inboxFilter==="Favorites" ? (inboxFilter==="Favorites"?!!inboxFavorites[x.id]:true) : x.status===inboxFilter; const readOk=inboxReadFilter==="All"||(inboxReadFilter==="Unread"&&!x.read)||(inboxReadFilter==="Read"&&x.read); return statusOk&&readOk; });
  const hasReply=thread.messages.some(m=>m.type==="reply");
  const stopped=thread.sequenceStopped||hasReply;
 
@@ -1219,10 +1222,13 @@ function inboxPage(){
    <p>All replies across your sending accounts. Star important conversations and classify replies for Lisa.</p></div>
  </div>
  <div class="master-tabs">
-   ${["All","Favorites","Interested","Meeting Booked","Replied","No Reply","Unsubscribe"].map(x=>`<button class="master-tab ${inboxFilter===x?'active':''}" onclick="setInboxFilter('${x}')">${x}${x==="Favorites"?" ★":""}</button>`).join("")}
+   ${["All","Favorites","Interested","Meeting Booked","Replied","Unsubscribe"].map(x=>`<button class="master-tab ${inboxFilter===x?'active':''}" onclick="setInboxFilter('${x}')">${x}${x==="Favorites"?" ★":""}</button>`).join("")}
  </div>
  <div class="inbox-filter">
    <input placeholder="Search people, companies or email..." oninput="filterInboxSearch(this.value)">
+   <select onchange="inboxReadFilter=this.value;render()">
+     <option value="All">All messages</option><option value="Unread">Unread</option><option value="Read">Read</option>
+   </select>
    <select onchange="setInboxFilter(this.value)">
      <option ${inboxFilter==="All"?"selected":""}>All</option>
      <option ${inboxFilter==="Favorites"?"selected":""}>Favorites</option>
@@ -1237,14 +1243,15 @@ function inboxPage(){
  <div class="panel inbox-layout">
    <div class="thread-list">
      ${visible.map(t=>`
-       <div class="thread-item ${t.id===selectedThread?'selected':''}" onclick="openThread(${t.id})">
+       <div class="thread-item ${t.id===selectedThread?'selected ':''}${t.read?'read':'unread'}" onclick="openThread(${t.id})">
          <div style="display:flex;align-items:flex-start;gap:7px">
+           ${!t.read?'<span class="unread-dot" title="Unread"></span>':''}
            <button class="star-btn ${inboxFavorites[t.id]?'starred':''}" title="${inboxFavorites[t.id]?'Remove favorite':'Mark favorite'}"
              onclick="event.stopPropagation();toggleInboxFavorite(${t.id})">${inboxFavorites[t.id]?'★':'☆'}</button>
            <div style="min-width:0;flex:1">
              <div class="thread-top"><span class="thread-name">${t.name}</span><span class="thread-time">${t.time}</span></div>
              <div class="thread-preview">${t.preview}</div>
-             <div class="thread-meta"><span class="badge">${t.account}</span><span class="badge">${t.step}</span><span class="lead-status ${t.status==='Replied'||t.status==='Interested'||t.status==='Meeting Booked'?'reply':t.status==='Unsubscribe'?'stopped':''}">${t.status}</span></div>
+             <div class="thread-meta"><span class="badge">${t.account}</span><span class="badge">${t.step}</span><span class="tag-badge">${t.tag||"Not tagged"}</span><span class="read-badge">${t.read?"Read":"Unread"}</span></div>
            </div>
          </div>
        </div>`).join("") || `<div style="padding:25px;text-align:center;color:#858a98">No conversations found.</div>`}
@@ -1299,7 +1306,7 @@ function inboxPage(){
  </div>`;
 }
 
-function openThread(id){ selectedThread=id; render(); }
+function openThread(id){ selectedThread=id; const t=inboxThreads.find(x=>x.id===id); if(t)t.read=true; render(); }
 function filterInboxSearch(q){
  q=q.toLowerCase();
  document.querySelectorAll(".thread-item").forEach(el=>{
