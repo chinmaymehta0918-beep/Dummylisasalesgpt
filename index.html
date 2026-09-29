@@ -316,13 +316,13 @@ function campaignsPage(){
      <div><div class="small-help">DELIVERY</div><b>${c.delivery}%</b></div>
      <div><span class="status ${c.status==='Paused'?'paused':''}">${c.status}</span></div>
      <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;position:relative">
-      <div class="toggle-wrap"><label class="toggle"><input type="checkbox" \${c.status==='Running'?'checked':''} onchange="toggleCampaign(\${i},this.checked)"><span class="slider"></span></label><span class="toggle-label" id="toggle-label-\${i}">\${c.status==='Running'?'ON':'OFF'}</span></div>
+      <div class="toggle-wrap"><label class="toggle"><input type="checkbox" ${c.status==='Running'?'checked':''} onchange="toggleCampaign(${i},this.checked)"><span class="slider"></span></label><span class="toggle-label" id="toggle-label-${i}">${c.status==='Running'?'ON':'OFF'}</span></div>
       <div class="campaign-menu-wrap">
-       <button class="campaign-menu-btn" onclick="toggleCampaignMenu(event,\${i})" aria-label="Campaign actions">⋯</button>
-       <div class="campaign-menu" id="campaign-menu-\${i}">
-        <button onclick="openCampaignSettings(event,\${i})">⚙ Campaign settings</button>
-        <button onclick="openCampaign(event,\${i})">↗ Open campaign</button>
-        <button class="danger" onclick="deleteCampaign(event,\${i})">⌫ Delete campaign</button>
+       <button class="campaign-menu-btn" onclick="toggleCampaignMenu(event,${i})" aria-label="Campaign actions">⋯</button>
+       <div class="campaign-menu" id="campaign-menu-${i}">
+        <button onclick="openCampaignSettings(event,${i})">⚙ Campaign settings</button>
+        <button onclick="openCampaign(event,${i})">↗ Open campaign</button>
+        <button class="danger" onclick="deleteCampaign(event,${i})">⌫ Delete campaign</button>
        </div>
       </div>
      </div>
