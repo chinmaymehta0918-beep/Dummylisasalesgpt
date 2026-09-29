@@ -998,3 +998,740 @@ function createPage(){
   <aside class="beginner-help"><div class="help-card"><div class="help-icon">?</div><h3>New to OutreachOS?</h3><p>Think of a campaign as a simple list of people + a few emails + a sending schedule.</p><div class="help-row"><b>1</b><span>Name the campaign</span></div><div class="help-row"><b>2</b><span>Choose your audience</span></div><div class="help-row"><b>3</b><span>Write 3–4 emails</span></div><div class="help-row"><b>4</b><span>Choose inbox & schedule</span></div></div><div class="help-card tip"><b>Tip</b><p>Start small. Test with 50–100 contacts before increasing your daily sending limit.</p></div></aside>
  </div>`;
 }
+function generateAISequence(){
+ const offer=document.getElementById("aiOffer").value.trim()||"our solution";
+ const persona=document.getElementById("aiPersona").value.trim()||"sales leader";
+ const tone=document.getElementById("aiTone").value;
+ const count=Number(document.getElementById("aiSteps").value);
+ const context=document.getElementById("aiContext").value.trim()||"helping teams improve outbound efficiency";
+ const templates=[
+  {subject:"Quick idea for {{company}}",body:`Hi {{first_name}},\n\nI noticed {{company}} is growing its sales motion and thought this might be relevant.\n\nWe help ${persona}s ${context} with ${offer}.\n\nWorth a quick conversation?\n\nBest,\nChinmay`},
+  {subject:"Re: Quick idea for {{company}}",body:`Hi {{first_name}},\n\nJust following up on my note below.\n\nThe reason I reached out is simple: ${context}.\n\nHappy to share how ${offer} could fit into what {{company}} is doing.\n\nOpen to a quick chat?\n\nBest,\nChinmay`},
+  {subject:"One more thought for {{company}}",body:`Hi {{first_name}},\n\nOne more thought before I close the loop.\n\nIf ${context} is a priority for {{company}}, I can show you a short example of what we're doing with ${offer}.\n\nWould that be useful?\n\nBest,\nChinmay`},
+  {subject:"Should I close the loop?",body:`Hi {{first_name}},\n\nI haven't heard back, so I'll close the loop here.\n\nIf ${offer} becomes relevant for {{company}}, feel free to reply and I'll send over the details.\n\nBest,\nChinmay`}
+ ];
+ builderSteps=templates.slice(0,count).map((x,i)=>({...x,delay:i===0?0:(i===1?3:(i===2?4:7)),unit:"days"}));
+ const result=document.getElementById("aiResult");
+ result.style.display="block";
+ result.innerHTML=`<b>Sequence generated</b><br>${count} emails created in a ${tone.toLowerCase()} tone. Review and edit them below before launching.`;
+ renderSequenceBuilder();
+}
+function clearAISequence(){document.getElementById("aiResult").style.display="none";}
+
+function renderSequenceBuilder(){
+ const el=document.getElementById("sequenceBuilder");
+ if(!el)return;
+ el.innerHTML=builderSteps.map((s,i)=>`<div class="sequence-step">
+   <div class="step-head"><div class="step-number">Step ${i+1}</div>${i>0?`<button class="remove" onclick="removeSequenceStep(${i})">Remove</button>`:""}</div>
+   <div class="field"><label>Subject</label><input value="${escapeHtml(s.subject)}" oninput="updateStep(${i},'subject',this.value)"></div>
+   <div class="field"><label>Email content</label><textarea oninput="updateStep(${i},'body',this.value)">${escapeHtml(s.body)}</textarea></div>
+   ${i<builderSteps.length-1?`<div class="delay"><b>Wait before next step:</b><input type="number" min="0" value="${s.delay}" oninput="updateStep(${i},'delay',this.value)"><select onchange="updateStep(${i},'unit',this.value)"><option ${s.unit==="hours"?"selected":""}>hours</option><option ${s.unit==="days"?"selected":""}>days</option></select></div>`:"<div class='small-help'>This is the final step in the sequence.</div>"}
+   <div class="small-help">Click a variable button above to copy a variable into your email, then place it where you want.</div>
+ </div>`).join("");
+ updatePreview();
+}
+
+function escapeHtml(v){return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function updateStep(i,key,value){builderSteps[i][key]=value;updatePreview();}
+function addSequenceStep(){builderSteps.push({subject:"",body:"Hi {{first_name}},\n\n",delay:3,unit:"days"});renderSequenceBuilder();}
+function removeSequenceStep(i){builderSteps.splice(i,1);renderSequenceBuilder();}
+function addCustomVariable(){
+ const n=prompt("Variable name (without spaces):","custom_field");
+ if(!n)return;
+ const clean=n.toLowerCase().replace(/[^a-z0-9_]/g,"_");
+ const label=prompt("Display label:",clean.replace(/_/g," "));
+ const example=prompt("Example value:","Example value");
+ customVariables.push({name:clean,label:label||clean,example:example||"Example"});
+ const c=document.getElementById("app");c.innerHTML=createPage();renderSequenceBuilder();
+}
+function removeCustomVariable(i){customVariables.splice(i,1);const c=document.getElementById("app");c.innerHTML=createPage();renderSequenceBuilder();}
+function insertVariable(name){
+ const active=document.activeElement;
+ if(active && (active.tagName==="INPUT"||active.tagName==="TEXTAREA")) {
+   const start=active.selectionStart||active.value.length,end=active.selectionEnd||active.value.length;
+   active.value=active.value.slice(0,start)+"{{"+name+"}}"+active.value.slice(end);
+   active.dispatchEvent(new Event("input"));
+ }else{
+   alert("Click inside a subject or email body first, then choose the variable.");
+ }
+}
+function updatePreview(){
+ const el=document.getElementById("emailPreview");
+ if(!el||!builderSteps.length)return;
+ let s=builderSteps[0];
+ let body=s.body.replace(/{{first_name}}/g,"John").replace(/{{company}}/g,"Acme SaaS").replace(/{{job_title}}/g,"VP Sales").replace(/{{industry}}/g,"SaaS");
+ customVariables.forEach(v=>body=body.replaceAll("{{"+v.name+"}}",v.example));
+ el.innerHTML="<b>"+escapeHtml(s.subject.replace(/{{first_name}}/g,"John").replace(/{{company}}/g,"Acme SaaS"))+"</b><br><br>"+escapeHtml(body);
+}
+
+function sendTestEmail(){
+ const input=document.getElementById("testEmail");
+ const status=document.getElementById("testEmailStatus");
+ const email=(input?.value||"").trim();
+ if(!email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){
+   if(status) status.textContent="Enter a valid email address first.";
+   return;
+ }
+ if(status){
+   status.textContent=`Test email prepared for ${email}. This prototype does not send real email.`;
+   status.style.color="#28784f";
+ }
+}
+
+function toggleReplyFollowupDays(){
+ const enabled=document.getElementById("continueAfterReply")?.checked;
+ const wrap=document.getElementById("replyFollowupDaysWrap");
+ const summary=document.getElementById("replyFollowupSummary");
+ if(wrap) wrap.style.display=enabled?"block":"none";
+ if(summary) summary.innerHTML=enabled
+   ? `<b>Lisa will wait ${Number(document.getElementById("replyFollowupDays")?.value||2)} days</b> after a reply before sending the next campaign email.`
+   : `<b>Default:</b> A reply stops the sequence. You can turn this on if you want another email after the response.`;
+}
+function getReplyFollowupSettings(){
+ return {
+   continueAfterReply: !!document.getElementById("continueAfterReply")?.checked,
+   daysAfterReply: Math.max(1, Number(document.getElementById("replyFollowupDays")?.value||2))
+ };
+}
+function launchBuilderCampaign(){
+ const name=document.getElementById("cName").value.trim();
+ const audience=document.getElementById("cAudience")?.value.trim();
+ const contacts=Number(document.getElementById("cContacts")?.value||0);
+ const source=document.getElementById("cSource")?.value;
+ const inboxPlan=getCampaignInboxPlan();
+ if(!name||!audience||!contacts||!source){alert("Please complete the campaign name, audience, contact count and contact source.");return;}
+ if(!inboxPlan.length){alert("Choose at least one active inbox and set its daily email limit.");return;}
+ if(builderSteps.some(s=>!s.subject.trim()||!s.body.trim())){alert("Every sequence step needs a subject and email body.");return;}
+ const totalDaily=inboxPlan.reduce((sum,x)=>sum+x.dailyLimit,0);
+ campaigns.push({name,contacts,sent:0,delivery:0,replies:0,status:"Paused",inboxPlan,totalDaily,replyFollowup:getReplyFollowupSettings()});
+ alert("Campaign created as Paused. Review it in Campaigns before turning it ON.");
+ go("campaigns");
+}
+
+
+const responseTypes=["Interested","Not Interested","Out of Office","Unsubscribe","Other"];
+function markMeetingBooked(id){
+ const t=inboxThreads.find(x=>x.id===id);
+ if(!t)return;
+ t.meetingBooked=true;
+ t.status="Meeting Booked";
+ t.classification="Meeting Booked";
+ t.sequenceStopped=true;
+ t.meetingDate=t.meetingDate||"Add meeting date";
+ render();
+}
+function setMeetingDate(id,value){
+ const t=inboxThreads.find(x=>x.id===id);
+ if(!t)return;
+ t.meetingDate=value||"Add meeting date";
+ render();
+}
+function clearMeetingBooked(id){
+ const t=inboxThreads.find(x=>x.id===id);
+ if(!t)return;
+ t.meetingBooked=false;
+ t.status="Replied";
+ t.classification="Interested";
+ t.meetingDate="";
+ render();
+}
+function markResponse(id,type){
+ const t=inboxThreads.find(x=>x.id===id); if(!t)return;
+ t.status=type;
+ t.sequenceStopped=true;
+ t.classification=type;
+ render();
+}
+function resumeSequence(id){
+ const t=inboxThreads.find(x=>x.id===id); if(!t)return;
+ t.sequenceStopped=false;
+ t.status="Active";
+ render();
+}
+function saveResponseNote(id){
+ const note=document.getElementById("responseNote")?.value||"";
+ const t=inboxThreads.find(x=>x.id===id); if(t)t.note=note;
+ render();
+}
+function pauseSequence(id){
+ const t=inboxThreads.find(x=>x.id===id); if(!t)return;
+ t.sequenceStopped=true; t.status="Paused"; render();
+}
+function openReplyComposer(id){
+ const t=inboxThreads.find(x=>x.id===id); if(!t)return;
+ const existing=document.getElementById("replyModal"); if(existing)existing.remove();
+ document.body.insertAdjacentHTML("beforeend",`<div class="modal-backdrop" id="replyModal" onclick="if(event.target.id==='replyModal')closeReplyComposer()">
+ <div class="modal"><h3>Reply to ${escapeHtml(t.name)}</h3><p class="muted">${escapeHtml(t.email)} · ${escapeHtml(t.campaign)}</p>
+ <textarea id="replyBody" class="reply-note" style="min-height:180px" placeholder="Write your reply..."></textarea>
+ <div class="modal-actions"><button class="secondary" onclick="closeReplyComposer()">Cancel</button><button class="primary" onclick="sendReply(${id})">Send Reply</button></div></div></div>`);
+}
+function closeReplyComposer(){const m=document.getElementById("replyModal");if(m)m.remove();}
+function sendReply(id){
+ const body=document.getElementById("replyBody")?.value.trim(); if(!body){alert("Write a reply first.");return;}
+ const t=inboxThreads.find(x=>x.id===id); if(!t)return;
+ t.messages.push({from:"You",date:"Just now",body,type:"sent"});
+ t.time="Just now"; t.preview=body; closeReplyComposer(); render();
+}
+
+
+function inboxPage(){
+ const thread=inboxThreads.find(x=>x.id===selectedThread)||inboxThreads[0];
+ const visible=inboxThreads.filter(x=>inboxFilter==="All"||inboxFilter==="Favorites" ? (inboxFilter==="Favorites"?!!inboxFavorites[x.id]:true) : x.status===inboxFilter);
+ const hasReply=thread.messages.some(m=>m.type==="reply");
+ const stopped=thread.sequenceStopped||hasReply;
+
+ return `<div class="toolbar">
+   <div><div class="eyebrow">INBOX</div><h2>Master Inbox</h2>
+   <p>All replies across your sending accounts. Star important conversations and classify replies for Lisa.</p></div>
+ </div>
+ <div class="master-tabs">
+   ${["All","Favorites","Interested","Meeting Booked","Replied","No Reply","Unsubscribe"].map(x=>`<button class="master-tab ${inboxFilter===x?'active':''}" onclick="setInboxFilter('${x}')">${x}${x==="Favorites"?" ★":""}</button>`).join("")}
+ </div>
+ <div class="inbox-filter">
+   <input placeholder="Search people, companies or email..." oninput="filterInboxSearch(this.value)">
+   <select onchange="setInboxFilter(this.value)">
+     <option ${inboxFilter==="All"?"selected":""}>All</option>
+     <option ${inboxFilter==="Favorites"?"selected":""}>Favorites</option>
+     <option ${inboxFilter==="Interested"?"selected":""}>Interested</option>
+     <option ${inboxFilter==="Meeting Booked"?"selected":""}>Meeting Booked</option>
+     <option ${inboxFilter==="Replied"?"selected":""}>Replied</option>
+     <option ${inboxFilter==="No Reply"?"selected":""}>No Reply</option>
+     <option ${inboxFilter==="Unsubscribe"?"selected":""}>Unsubscribe</option>
+   </select>
+ </div>
+
+ <div class="panel inbox-layout">
+   <div class="thread-list">
+     ${visible.map(t=>`
+       <div class="thread-item ${t.id===selectedThread?'selected':''}" onclick="openThread(${t.id})">
+         <div style="display:flex;align-items:flex-start;gap:7px">
+           <button class="star-btn ${inboxFavorites[t.id]?'starred':''}" title="${inboxFavorites[t.id]?'Remove favorite':'Mark favorite'}"
+             onclick="event.stopPropagation();toggleInboxFavorite(${t.id})">${inboxFavorites[t.id]?'★':'☆'}</button>
+           <div style="min-width:0;flex:1">
+             <div class="thread-top"><span class="thread-name">${t.name}</span><span class="thread-time">${t.time}</span></div>
+             <div class="thread-preview">${t.preview}</div>
+             <div class="thread-meta"><span class="badge">${t.account}</span><span class="badge">${t.step}</span><span class="lead-status ${t.status==='Replied'||t.status==='Interested'||t.status==='Meeting Booked'?'reply':t.status==='Unsubscribe'?'stopped':''}">${t.status}</span></div>
+           </div>
+         </div>
+       </div>`).join("") || `<div style="padding:25px;text-align:center;color:#858a98">No conversations found.</div>`}
+   </div>
+
+   <div class="thread-detail">
+     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:15px">
+       <div><h3 style="margin:0">${thread.name}</h3><div class="muted">${thread.email} · ${thread.company}</div></div>
+       <button class="star-btn ${inboxFavorites[thread.id]?'starred':''}" title="${inboxFavorites[thread.id]?'Remove favorite':'Mark favorite'}"
+         onclick="toggleInboxFavorite(${thread.id})">${inboxFavorites[thread.id]?'★':'☆'}</button>
+     </div>
+
+     <div style="margin-top:10px" class="muted">Campaign: ${thread.campaign} · Current sequence position: ${thread.step}</div>
+
+     ${thread.meetingBooked?`<div class="notice" style="margin-top:14px;border-color:#b9dfc8;background:#f1fbf5">
+       <b>✓ Meeting booked</b>
+       <div class="muted" style="margin-top:3px">${thread.meetingDate||"Meeting date not added yet"}</div>
+       <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+         <input type="datetime-local" onchange="setMeetingDate(${thread.id},this.value)" style="max-width:220px">
+         <button class="secondary" onclick="clearMeetingBooked(${thread.id})">Mark as not booked</button>
+       </div>
+     </div>`:""}
+
+     ${stopped?`<div class="auto-stop"><b>Sequence automatically stopped</b><br>No further emails will be sent to this lead because a reply was received.</div>`:""}
+
+     <div style="margin-top:20px">
+       ${thread.messages.map(m=>`<div class="email-bubble ${m.type==='reply'?'reply':''}">
+         <div><span class="from">${m.from}</span><span class="date">${m.date}</span></div>
+         <div class="body">${m.body}</div>
+       </div>`).join("")}
+     </div>
+
+     ${hasReply?`
+       <div class="response-actions">
+         <h4>How should Lisa mark this reply?</h4>
+         <p class="muted" style="font-size:11px;margin-top:-5px">Choose a label so Lisa knows what happened and can organize the conversation.</p>
+         <div class="response-grid">${responseTypes.map(x=>`<button class="response-btn ${thread.classification===x?'selected':''}" onclick="markResponse(${thread.id},'${x}')">${x}</button>`).join("")}</div>
+         <textarea id="responseNote" class="reply-note" placeholder="Add an internal note...">${thread.note||""}</textarea>
+         <div class="actions">
+           <button class="primary" onclick="saveResponseNote(${thread.id})">Save Note</button>
+           ${thread.status!=="Unsubscribe"?`<button class="secondary" onclick="openResumeSequenceModal(${thread.id})">Resume Sequence</button>`:""}
+         </div>
+       </div>`:""}
+
+     <div class="inbox-actions">
+       ${!thread.meetingBooked?`<button class="primary" onclick="markMeetingBooked(${thread.id})">✓ Mark Meeting Booked</button>`:""}
+       <button class="primary" onclick="openReplyComposer(${thread.id})">Reply</button>
+       ${!stopped?`<button class="secondary" onclick="pauseSequence(${thread.id})">Pause Sequence</button>`:""}
+       <button class="secondary" onclick="markResponse(${thread.id},'Not Interested')">Not Interested</button>
+     </div>
+   </div>
+ </div>`;
+}
+
+function openThread(id){ selectedThread=id; render(); }
+function filterInboxSearch(q){
+ q=q.toLowerCase();
+ document.querySelectorAll(".thread-item").forEach(el=>{
+   el.style.display=el.innerText.toLowerCase().includes(q)?"block":"none";
+ });
+}
+
+function analyticsPage(){
+ const d=periods[currentPeriod]||periods["7"];
+ const campaignsA=[
+  {name:"US SaaS Founders — Q4",sent:2840,delivery:95.8,replies:522,positive:96,meetings:21,status:"Running"},
+  {name:"VP Product — Design-led SaaS",sent:1640,delivery:96.1,replies:208,positive:54,meetings:13,status:"Running"},
+  {name:"Fintech GTM Leaders",sent:1210,delivery:94.9,replies:184,positive:23,meetings:5,status:"Paused"}
+ ];
+ return `<div class="toolbar"><div><div class="eyebrow">REPORTING</div><h2>Analytics</h2><p>Deeper reporting for comparing campaigns, sequences and audiences.</p></div><div class="periods">${Object.entries(periods).map(([k,v])=>`<button class="${currentPeriod===k?'active':''}" onclick="setPeriod('${k}')">${v.label}</button>`).join('')}</div></div>
+ <div class="smart-kpis"><div class="smart-kpi"><div class="label">EMAILS SENT</div><div class="value">${d.sent.toLocaleString()}</div><div class="trend neutral">${d.label}</div></div><div class="smart-kpi"><div class="label">DELIVERED</div><div class="value">${d.delivered.toLocaleString()}</div><div class="trend neutral">${pct(d.delivered,d.sent)}%</div></div><div class="smart-kpi"><div class="label">REPLIES</div><div class="value">${d.replies.toLocaleString()}</div><div class="trend neutral">${pct(d.replies,d.sent)}%</div></div><div class="smart-kpi"><div class="label">POSITIVE REPLIES</div><div class="value">173</div><div class="trend neutral">Current sample</div></div><div class="smart-kpi"><div class="label">MEETINGS BOOKED</div><div class="value">24</div><div class="trend neutral">Current sample</div></div></div>
+ <div class="smart-panel" style="margin-bottom:16px">
+  <h3>Meeting tracking</h3>
+  <div class="sub">Meetings marked as booked in Inbox are reflected here.</div>
+  <div style="display:flex;gap:28px;margin-top:16px;align-items:center">
+    <div><div style="font-size:28px;font-weight:800">${inboxThreads.filter(t=>t.meetingBooked).length}</div><div class="muted">Meetings booked</div></div>
+    <button class="text-action" onclick="go('inbox');inboxFilter='Meeting Booked'">View booked meetings →</button>
+  </div>
+ </div>
+<div class="smart-panel" style="margin-bottom:16px"><h3>Campaign Comparison</h3><div class="sub">Compare volume and response without turning this into an advanced BI dashboard.</div><div class="campaign-row header"><div>Campaign</div><div>Sent</div><div>Delivery</div><div>Replies</div><div>Reply rate</div></div>${campaignsA.map(c=>`<div class="campaign-row"><div><div class="campaign-name">${c.name}</div><div class="muted">${c.positive} positive · ${c.meetings} meetings</div></div><div>${c.sent.toLocaleString()}</div><div>${c.delivery}%</div><div>${c.replies}</div><div><b>${pct(c.replies,c.sent)}%</b></div></div>`).join('')}</div>
+ <div class="dashboard-grid">
+  <div class="smart-panel"><h3>Lisa's Analysis</h3><div class="sub">What the numbers suggest you inspect next.</div>${lisaSuggestionsHTML(4)}</div>
+  <div class="smart-panel"><h3>Audience Insights</h3><div class="sub">Reply rates by persona in the current sample.</div><div class="audience-grid"><div class="audience-item"><b>VP Product</b><span>18.2% reply rate</span></div><div class="audience-item"><b>Founder</b><span>16.8% reply rate</span></div><div class="audience-item"><b>Head of Sales</b><span>13.4% reply rate</span></div><div class="audience-item"><b>Marketing Lead</b><span>10.1% reply rate</span></div></div></div>
+ </div>
+ <div class="dashboard-grid">
+  <div class="smart-panel"><h3>Sequence Performance</h3><div class="sub">Reply rate by email in the sequence.</div><div class="sequence-bars"><div class="seq-row"><span>First email</span><div class="seq-track"><i style="width:66%"></i></div><b>6.2%</b></div><div class="seq-row"><span>Follow-up 1</span><div class="seq-track"><i style="width:100%"></i></div><b>9.4%</b></div><div class="seq-row"><span>Follow-up 2</span><div class="seq-track"><i style="width:76%"></i></div><b>7.1%</b></div><div class="seq-row"><span>Follow-up 3</span><div class="seq-track"><i style="width:34%"></i></div><b>3.2%</b></div></div></div>
+
+ </div>
+ <div class="smart-panel"><h3>Operational Summary</h3><div class="sub">Basic sending activity currently represented in the prototype.</div><div class="smart-kpis" style="margin:0;grid-template-columns:repeat(3,1fr)"><div class="smart-kpi"><div class="label">SENDING ACCOUNTS</div><div class="value">3 active</div></div><div class="smart-kpi"><div class="label">ACTIVE SEQUENCES</div><div class="value">5</div></div><div class="smart-kpi"><div class="label">FOLLOW-UPS DUE</div><div class="value">18</div></div></div></div>`;
+}
+
+function accountsPage(){
+ return `<div class="toolbar"><div><div class="eyebrow">SENDING</div><h2>Email Accounts</h2>
+<div class="notice" style="margin:0">
+      <b id="totalDailyCapacity">0</b> emails/day total capacity
+    </div>
+  </div>
+
+  <div id="emailAccountLimitRows" style="margin-top:16px"></div>
+
+  <div class="small-help" style="margin-top:12px">
+    Lisa will use these limits when balancing new leads and follow-ups. Campaign-level limits can still reduce the actual daily volume.
+  </div>
+</div>
+<p>Manage connected inboxes and choose which accounts can send.</p></div><button class="primary" onclick="showAddEmailModal()">＋ Add New Email ID</button></div>
+ ${complianceNoticeHTML()}
+ <div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div><h3 style="margin:0 0 4px">Sending accounts</h3><div class="muted">Turn an inbox on or off for campaign sending and rotation.</div></div><span class="badge">${emailAccounts.filter(a=>a.active).length} active</span></div>
+ ${emailAccounts.map((a,i)=>`<div class="account"><div class="account-main"><span class="account-dot ${a.active?'':'off'}"></span><div><b>${a.email}</b><div class="muted">${a.role} · ${a.provider}</div></div></div><div class="account-actions"><div class="toggle-wrap"><label class="toggle"><input type="checkbox" ${a.active?'checked':''} onchange="toggleEmailAccount(${i},this.checked)"><span class="slider"></span></label><span class="toggle-label">${a.active?'ON':'OFF'}</span></div></div></div>`).join("")}
+ </div>`;
+}
+
+function settingsPage(){
+ return `<div class="toolbar"><div><div class="eyebrow">WORKSPACE</div><h2>Settings</h2><p>Set the default rules Lisa uses when creating and sending campaigns.</p></div></div>
+
+ <div class="panel form">
+  <h3 style="margin-top:0">Workspace</h3>
+  <div class="two-col">
+   <div class="field"><label>Workspace name</label><input id="workspaceName" value="SalesGPT.work"></div>
+   <div class="field"><label>Default timezone</label>
+    <select id="workspaceTimezone">
+     <option value="Asia/Kolkata">India — Asia/Kolkata</option>
+     <option value="America/New_York">US Eastern — America/New_York</option>
+     <option value="America/Los_Angeles">US Pacific — America/Los_Angeles</option>
+     <option value="Europe/London">UK — Europe/London</option>
+     <option value="Europe/Berlin">Central Europe — Europe/Berlin</option>
+     <option value="Asia/Singapore">Singapore — Asia/Singapore</option>
+     <option value="Australia/Sydney">Australia — Australia/Sydney</option>
+     <option value="Asia/Dubai">UAE — Asia/Dubai</option>
+    </select>
+   </div>
+  </div>
+ </div>
+
+ <div class="panel form">
+  <h3 style="margin-top:0">Default sending schedule</h3>
+  <p class="muted">New campaigns will start with these settings. You can change them anytime.</p>
+
+  <div class="field">
+    <label>Timezone</label>
+    <select id="workspaceTimezone">
+      <option value="Asia/Kolkata">India (IST)</option>
+      <option value="America/New_York">US Eastern</option>
+      <option value="America/Los_Angeles">US Pacific</option>
+      <option value="Europe/London">UK</option>
+      <option value="Europe/Berlin">Central Europe</option>
+      <option value="Asia/Singapore">Singapore</option>
+      <option value="Australia/Sydney">Australia</option>
+      <option value="Asia/Dubai">UAE</option>
+    </select>
+  </div>
+
+  <label class="check" style="margin-top:12px">
+    <input id="defaultLocalTime" type="checkbox">
+    Send at each lead's local time by default
+  </label>
+
+  <div class="two-col" style="margin-top:14px">
+    <div class="field"><label>Start sending at</label><input id="defaultStart" type="time" value="09:00"></div>
+    <div class="field"><label>Stop sending at</label><input id="defaultEnd" type="time" value="18:00"></div>
+  </div>
+
+  <div style="margin-top:14px">
+    <div style="font-weight:700;margin-bottom:7px">Send on</div>
+    <div class="small-help" style="margin-bottom:10px">Pick the days when emails can go out.</div>
+    <div class="day-picker" style="display:flex;flex-wrap:wrap;gap:7px">
+      ${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>`<label class="day-chip" style="display:flex;align-items:center;gap:5px;border:1px solid #ddd;padding:7px 10px;border-radius:8px;cursor:pointer;background:#fff"><input type="checkbox" id="sDay${i}" ${i<5?'checked':''}> ${d}</label>`).join("")}
+    </div>
+  </div>
+ </div>
+
+ <div class="panel form">
+  <h3 style="margin-top:0">Lisa & sequence defaults</h3>
+  <div class="field"><label>Default sending priority</label>
+   <select id="defaultPriority">
+    <option value="balanced">Balanced</option>
+    <option value="followups">Follow-ups First</option>
+    <option value="newleads">First Emails First</option>
+   </select>
+  </div>
+  <div class="check-grid" style="margin-top:14px">
+   <label class="check"><input type="checkbox" checked> Stop sequence when a lead replies</label>
+   <label class="check"><input type="checkbox" checked> Stop sequence when a lead unsubscribes</label>
+   <label class="check"><input type="checkbox" checked> Stop sequence when an email bounces</label>
+   <label class="check"><input type="checkbox"> Stop sequence when a meeting is booked</label>
+  </div>
+ </div>
+
+ <div class="panel">
+  <h3 style="margin-top:0">Notifications & compliance</h3>
+  <div class="check-grid">
+   <label class="check"><input type="checkbox" checked> Notify me when replies need attention</label>
+   <label class="check"><input type="checkbox" checked> Notify me when sending is paused</label>
+   <label class="check"><input type="checkbox" checked> Show compliance reminders before launch</label>
+  </div>
+  <div class="notice" style="margin-top:14px">Sending windows are scheduling preferences, not legal limits. Provider limits and applicable consent, identification and unsubscribe requirements still apply.</div>
+ </div>
+
+ <div class="actions"><button id="settingsSaved" class="primary" onclick="saveSettings()">Save Settings</button></div>`;
+}
+function saveSettings(){
+ const name=document.getElementById("workspaceName")?.value.trim()||"SalesGPT.work";
+ const tz=document.getElementById("workspaceTimezone")?.value||"Asia/Kolkata";
+ const startTime=document.getElementById("defaultStart")?.value||"09:00";
+ const endTime=document.getElementById("defaultEnd")?.value||"18:00";
+ const basis=document.getElementById("defaultLocalTime")?.checked ? "Lead's local timezone" : "Campaign timezone";
+ const priority=document.getElementById("defaultPriority")?.value||"balanced";
+ const days=[0,1,2,3,4,5,6].filter(i=>document.getElementById("sDay"+i)?.checked);
+ localStorage.setItem("salesgpt_workspace",JSON.stringify({name,tz,start:startTime,end:endTime,basis,days,priority}));
+ sendingPriority=priority;
+ localStorage.setItem("salesgpt_sending_priority",priority);
+ const b=document.getElementById("settingsSaved");
+ if(b){b.textContent="Saved ✓";setTimeout(()=>b.textContent="Save Settings",1200);}
+}
+
+function render(){
+ const titles={dashboard:"Dashboard",campaigns:"Campaigns",create:"Create Campaign","campaign-detail":"Campaign",inbox:"Inbox",analytics:"Analytics",accounts:"Email Accounts",settings:"Settings"};
+ document.getElementById("pageTitle").textContent=page==="dashboard"?"Lisa Dashboard":titles[page];
+ const views={dashboard:dashboardPage,campaigns:campaignsPage,create:createPage,"campaign-detail":campaignDetailPage,inbox:inboxPage,analytics:analyticsPage,accounts:accountsPage,settings:settingsPage};
+ document.getElementById("app").innerHTML=views[page](); if(page==="campaigns"){initCampaignSequence(); setTimeout(()=>{ const f=document.getElementById("campaignSequenceFilter"); if(f){f.innerHTML='<option value="all">All campaigns</option>'+[...new Set(dashboardSequenceData.map(x=>x.campaign))].map(x=>`<option value="${x}">${x}</option>`).join("");} renderCampaignSequenceTable();},0);} if(page==="dashboard"){renderDashboardSequenceGraph();renderDashboardAnalytics();}
+ if(page==="create"){renderSequenceBuilder();updateCampaignInboxSummary();}
+}
+function setPeriod(p){currentPeriod=p;render()}
+function renderCampaignCompletionOverview(){
+  const el=document.getElementById("campaignCompletionOverview");
+  if(!el || typeof campaigns==="undefined") return;
+  el.innerHTML=campaigns.map(c=>`
+    <div style="border:1px solid #e7e7ec;border-radius:10px;padding:14px;background:#fff">
+      <div style="font-weight:600;margin-bottom:10px">${c.name}</div>
+      ${campaignCompletionHtml(c)}
+      ${campaignLeadStatusHtml(c)}
+    </div>`).join("");
+}
+
+
+function campaignLeadStatus(c){
+  const total = Math.max(0, Number(c?.contacts || 0));
+  const sent = Math.min(total, Math.max(0, Number(c?.sent || 0)));
+  const remaining = Math.max(0, Number(c?.yetToContact ?? (total - sent)));
+  const active = Math.max(0, Number(c?.activeLeads ?? Math.max(0, sent - Math.max(0, Number(c?.completedLeads || 0)))));
+  return {total, sent, active, remaining};
+}
+function campaignLeadStatusHtml(c){
+  const s = campaignLeadStatus(c);
+  return `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+      <div style="padding:10px;border:1px solid #ececf1;border-radius:9px;background:#fafafd">
+        <div class="muted" style="font-size:12px">Active leads</div>
+        <div style="font-size:18px;font-weight:700;margin-top:3px">${s.active.toLocaleString()}</div>
+      </div>
+      <div style="padding:10px;border:1px solid #ececf1;border-radius:9px;background:#fafafd">
+        <div class="muted" style="font-size:12px">Yet to be contacted</div>
+        <div style="font-size:18px;font-weight:700;margin-top:3px">${s.remaining.toLocaleString()}</div>
+      </div>
+    </div>`;
+}
+
+
+const sequencePerformanceData = [
+  {campaign:"US SaaS Founders — Q4",step:"Step 1",status:"Active",leads:820,sent:820,replyRate:14.6},
+  {campaign:"US SaaS Founders — Q4",step:"Step 2",status:"Active",leads:710,sent:710,replyRate:18.2},
+  {campaign:"US SaaS Founders — Q4",step:"Step 3",status:"Replied",leads:520,sent:520,replyRate:21.1},
+  {campaign:"VP Product — Design-led SaaS",step:"Step 1",status:"Active",leads:510,sent:510,replyRate:10.8},
+  {campaign:"VP Product — Design-led SaaS",step:"Step 2",status:"Active",leads:460,sent:460,replyRate:13.9},
+  {campaign:"VP Product — Design-led SaaS",step:"Step 3",status:"Completed",leads:380,sent:380,replyRate:17.4},
+  {campaign:"Fintech GTM Leaders",step:"Step 1",status:"Scheduled",leads:430,sent:430,replyRate:9.7},
+  {campaign:"Fintech GTM Leaders",step:"Step 2",status:"Active",leads:390,sent:390,replyRate:12.5},
+  {campaign:"Fintech GTM Leaders",step:"Step 3",status:"Replied",leads:280,sent:280,replyRate:16.8}
+];
+
+function renderSequencePerformanceFilters(){
+  const cf=document.getElementById("sequenceCampaignFilter");
+  const sf=document.getElementById("sequenceStepFilter");
+  if(cf){
+    const campaigns=[...new Set(sequencePerformanceData.map(x=>x.campaign))];
+    cf.innerHTML='<option value="all">All campaigns</option>'+campaigns.map(x=>`<option value="${x}">${x}</option>`).join("");
+  }
+  if(sf){
+    const steps=[...new Set(sequencePerformanceData.map(x=>x.step))];
+    sf.innerHTML='<option value="all">All sequence steps</option>'+steps.map(x=>`<option value="${x}">${x}</option>`).join("");
+  }
+  filterSequencePerformance();
+}
+
+function filterSequencePerformance(){
+  const out=document.getElementById("sequencePerformanceFiltered");
+  if(!out) return;
+  const campaign=document.getElementById("sequenceCampaignFilter")?.value||"all";
+  const step=document.getElementById("sequenceStepFilter")?.value||"all";
+  const status=document.getElementById("sequenceStatusFilter")?.value||"all";
+  const rows=sequencePerformanceData.filter(x=>
+    (campaign==="all"||x.campaign===campaign) &&
+    (step==="all"||x.step===step) &&
+    (status==="all"||x.status===status)
+  );
+  if(!rows.length){
+    out.innerHTML='<div class="muted" style="padding:18px 4px">No sequence data matches these filters.</div>';
+    return;
+  }
+  out.innerHTML=`
+    <table class="table">
+      <thead><tr>
+        <th>Campaign</th><th>Step</th><th>Lead Status</th><th>Leads</th><th>Sent</th><th>Reply Rate</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(r=>`<tr>
+          <td>${r.campaign}</td><td>${r.step}</td><td>${r.status}</td>
+          <td>${r.leads.toLocaleString()}</td><td>${r.sent.toLocaleString()}</td><td>${r.replyRate}%</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  setTimeout(renderSequencePerformanceFilters,80);
+});
+
+
+let resumeSequenceTarget = null;
+
+function openResumeSequenceModal(target){
+  resumeSequenceTarget = target || null;
+  const modal=document.getElementById("resumeSequenceModal");
+  const input=document.getElementById("resumeSequenceDays");
+  if(input) input.value=2;
+  if(modal) modal.style.display="flex";
+  updateResumeSequenceSummary();
+}
+
+function closeResumeSequenceModal(){
+  const modal=document.getElementById("resumeSequenceModal");
+  if(modal) modal.style.display="none";
+  resumeSequenceTarget=null;
+}
+
+function updateResumeSequenceSummary(){
+  const days=Math.max(0,Number(document.getElementById("resumeSequenceDays")?.value||2));
+  const el=document.getElementById("resumeSequenceSummary");
+  if(el) el.innerHTML = days===0
+    ? "<b>Resume immediately.</b> Lisa can continue with the next scheduled email."
+    : `<b>Resume after ${days} day${days===1?"":"s"}.</b> Lisa will wait before continuing the sequence.`;
+}
+
+function confirmResumeSequence(){
+  const days=Math.max(0,Number(document.getElementById("resumeSequenceDays")?.value||2));
+
+  // If a real lead object was supplied, keep the state on that object.
+  if(resumeSequenceTarget && typeof resumeSequenceTarget==="object"){
+    resumeSequenceTarget.sequenceStopped=false;
+    resumeSequenceTarget.sequenceResumeAfterDays=days;
+    resumeSequenceTarget.sequenceResumeScheduledAt=Date.now() + days*24*60*60*1000;
+    if("status" in resumeSequenceTarget && resumeSequenceTarget.status==="Replied"){
+      resumeSequenceTarget.status="Active";
+    }
+  }
+
+  closeResumeSequenceModal();
+
+  if(typeof render==="function") render();
+  else if(typeof renderInbox==="function") renderInbox();
+
+  alert(days===0
+    ? "Sequence resumed immediately."
+    : `Sequence will resume after ${days} day${days===1?"":"s"}.`);
+}
+
+document.addEventListener("input",e=>{
+  if(e.target && e.target.id==="resumeSequenceDays") updateResumeSequenceSummary();
+});
+
+
+
+const emailAccountsWithLimits = [
+  {email:"sales@outreachos.demo", status:"Active", limit:80},
+  {email:"chinmay@outreachos.demo", status:"Active", limit:60},
+  {email:"growth@outreachos.demo", status:"Active", limit:50}
+];
+
+function renderEmailAccountLimitsInline(){
+  const host=document.getElementById("emailAccountLimitRows");
+  if(!host) return;
+  host.innerHTML=emailAccountsWithLimits.map((a,i)=>`
+    <div style="display:grid;grid-template-columns:minmax(220px,1fr) 150px 90px;gap:14px;align-items:center;padding:14px 0;border-top:1px solid #ececf1">
+      <div>
+        <b>${a.email}</b>
+        <div class="small-help">${a.status}</div>
+      </div>
+      <div>
+        <label style="font-size:12px">Send limit</label>
+        <input type="number" min="1" max="500" value="${a.limit}"
+          onchange="updateEmailAccountLimitInline(${i},this.value)"
+          style="width:100%">
+      </div>
+      <div class="small-help">emails / day</div>
+    </div>
+  `).join("");
+}
+
+function updateEmailAccountLimitInline(index,value){
+  if(emailAccountsWithLimits[index]){
+    emailAccountsWithLimits[index].limit=Math.max(1,Math.min(500,Number(value)||1));
+  }
+  renderEmailAccountLimitsInline();
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  setTimeout(renderEmailAccountLimitsInline,100);
+});
+
+
+const dashboardSequenceData = [
+  {campaign:"US SaaS Founders — Q4",step:"Step 1",sent:820,replies:120},
+  {campaign:"US SaaS Founders — Q4",step:"Step 2",sent:710,replies:135},
+  {campaign:"US SaaS Founders — Q4",step:"Step 3",sent:520,replies:110},
+  {campaign:"US SaaS Founders — Q4",step:"Step 4",sent:390,replies:58},
+  {campaign:"VP Product — Design-led SaaS",step:"Step 1",sent:510,replies:55},
+  {campaign:"VP Product — Design-led SaaS",step:"Step 2",sent:460,replies:64},
+  {campaign:"VP Product — Design-led SaaS",step:"Step 3",sent:380,replies:66},
+  {campaign:"VP Product — Design-led SaaS",step:"Step 4",sent:290,replies:34},
+  {campaign:"Fintech GTM Leaders",step:"Step 1",sent:430,replies:42},
+  {campaign:"Fintech GTM Leaders",step:"Step 2",sent:390,replies:49},
+  {campaign:"Fintech GTM Leaders",step:"Step 3",sent:280,replies:47},
+  {campaign:"Fintech GTM Leaders",step:"Step 4",sent:210,replies:29}
+];
+
+function renderDashboardSequenceGraph(){
+  const host=document.getElementById("dashboardSequenceGraph");
+  const select=document.getElementById("dashboardSequenceCampaign");
+  if(!host) return;
+  const campaign=select?.value||"all";
+  const rows=dashboardSequenceData.filter(x=>campaign==="all"||x.campaign===campaign);
+
+  const max=Math.max(...rows.map(x=>x.sent),1);
+  host.innerHTML=rows.map(x=>{
+    const replyRate=(x.replies/x.sent*100);
+    const width=Math.max(4,Math.round(x.sent/max*100));
+    return `
+      <div style="display:grid;grid-template-columns:110px minmax(120px,1fr) 85px 80px;gap:10px;align-items:center;margin:10px 0">
+        <div><b>${x.step}</b><div class="small-help">${campaign==="all"?x.campaign:""}</div></div>
+        <div style="height:12px;background:#ececf1;border-radius:99px;overflow:hidden">
+          <div style="width:${width}%;height:100%;background:#635bff;border-radius:99px"></div>
+        </div>
+        <div style="text-align:right;font-weight:600">${x.sent.toLocaleString()}</div>
+        <div style="text-align:right">${replyRate.toFixed(1)}%</div>
+      </div>`;
+  }).join("") + `
+    <div style="display:grid;grid-template-columns:110px 1fr 85px 80px;gap:10px;margin-top:8px;color:#777;font-size:12px">
+      <div></div><div>Emails sent</div><div style="text-align:right">Sent</div><div style="text-align:right">Reply rate</div>
+    </div>`;
+}
+
+function renderDashboardAnalytics(){
+  const host=document.getElementById("dashboardAnalyticsCards");
+  if(!host) return;
+  const periodKey=(typeof selectedPeriod!=="undefined"?selectedPeriod:"7");
+  const p=(typeof periods!=="undefined"&&periods[periodKey])?periods[periodKey]:periods["7"];
+  const sent=Number(p.sent||0), delivered=Number(p.delivered||0), replies=Number(p.replies||0);
+  const delivery=sent?(delivered/sent*100):0;
+  const reply=sent?(replies/sent*100):0;
+  const positive=Math.round(replies*.42);
+  const meetings=Math.round(positive*.18);
+
+  const cards=[
+    ["Emails sent",sent.toLocaleString(),"activity"],
+    ["Delivered",delivery.toFixed(1)+"%","delivery"],
+    ["Replies",replies.toLocaleString(),"responses"],
+    ["Positive replies",positive.toLocaleString(),"interest"],
+    ["Meetings booked",meetings.toLocaleString(),"outcome"]
+  ];
+  host.innerHTML=cards.map(c=>`
+    <div style="border:1px solid #e7e7ec;border-radius:10px;padding:14px;background:#fff">
+      <div class="muted" style="font-size:12px">${c[0]}</div>
+      <div style="font-size:24px;font-weight:700;margin-top:5px">${c[1]}</div>
+      <div class="small-help" style="margin-top:4px">${c[2]}</div>
+    </div>`).join("");
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const s=document.getElementById("dashboardSequenceCampaign");
+  if(s){
+    const campaigns=[...new Set(dashboardSequenceData.map(x=>x.campaign))];
+    s.innerHTML='<option value="all">All campaigns</option>'+campaigns.map(x=>`<option value="${x}">${x}</option>`).join("");
+  }
+  setTimeout(()=>{
+    renderDashboardSequenceGraph();
+    renderDashboardAnalytics();
+  },100);
+});
+
+
+// Boot only after all data/constants/functions above have been initialized.
+document.addEventListener("DOMContentLoaded",()=>{ renderNav(); render(); });
+</script>
+
+
+
+
+<div id="resumeSequenceModal" style="display:none;position:fixed;inset:0;background:rgba(15,18,30,.45);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="width:min(440px,100%);background:#fff;border-radius:14px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.18)">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <div>
+        <h3 style="margin:0">Resume sequence</h3>
+        <p class="muted" style="margin:5px 0 0">Choose when Lisa should resume sending emails to this lead.</p>
+      </div>
+      <button onclick="closeResumeSequenceModal()" style="border:0;background:transparent;font-size:22px;cursor:pointer">×</button>
+    </div>
+    <div style="margin-top:18px">
+      <label>Resume after</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:7px">
+        <input id="resumeSequenceDays" type="number" min="0" max="30" value="2" style="width:110px">
+        <span>days</span>
+      </div>
+      <div id="resumeSequenceSummary" class="notice" style="margin-top:12px">
+        Sequence will resume after 2 days.
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+      <button class="btn" onclick="closeResumeSequenceModal()">Cancel</button>
+      <button class="btn primary" onclick="confirmResumeSequence()">Resume Sequence</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
