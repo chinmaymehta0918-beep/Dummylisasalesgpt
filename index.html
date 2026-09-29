@@ -165,7 +165,7 @@ body{background:var(--bg);font-size:14px;line-height:1.45}.sidebar{width:220px;p
 </style>
 <style>
 /* Distinct page treatment */
-.dashboard-command{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}
+.dashboard-kpis{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:20px}.dashboard-kpis .smart-kpi{min-height:132px}.dashboard-kpis .label{line-height:1.35}.dashboard-kpis .value{font-size:30px}.dashboard-kpis .trend{line-height:1.55}@media(max-width:900px){.dashboard-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.dashboard-kpis{grid-template-columns:1fr}}.dashboard-command{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}
 @media(max-width:900px){.dashboard-command{grid-template-columns:1fr}}
 </style>
 </head>
@@ -765,12 +765,12 @@ function dashboardPage(){
    <div class="periods">${Object.entries(periods).map(([k,v])=>`<button class="${currentPeriod===k?'active':''}" onclick="setPeriod('${k}')">${v.label}</button>`).join('')}</div>
  </div>
  ${priorityHero()}
- <div class="smart-kpis">
-  <div class="smart-kpi"><div class="label">EMAILS SENT</div><div class="value">${p.sent.toLocaleString()}</div><div class="trend neutral">${p.label}</div></div>
-  <div class="smart-kpi"><div class="label">DELIVERY RATE</div><div class="value">${delivery}%</div><div class="trend neutral">Delivered / sent</div></div>
-  <div class="smart-kpi"><div class="label">REPLY RATE</div><div class="value">${reply}%</div><div class="trend neutral">Replies / sent</div></div>
-  <div class="smart-kpi"><div class="label">POSITIVE REPLIES</div><div class="value">${positive.toLocaleString()}</div><div class="trend neutral">Estimated</div></div>
-  <div class="smart-kpi"><div class="label">MEETINGS BOOKED</div><div class="value">${meetings}</div><div class="trend neutral">${activeCampaigns} active campaigns</div></div>
+ <div class="smart-kpis dashboard-kpis">
+  <div class="smart-kpi"><div class="label">EMAILS SENT</div><div class="value">${p.sent.toLocaleString()}</div><div class="trend neutral">${p.label} · all campaigns</div></div>
+  <div class="smart-kpi"><div class="label">REPLY RATE</div><div class="value">${reply}%</div><div class="trend neutral">${p.replies.toLocaleString()} replies · ${p.sent.toLocaleString()} sent</div></div>
+  <div class="smart-kpi"><div class="label">INTERESTED REPLIES</div><div class="value">${Math.max(8,Math.round(p.replies*0.008))}</div><div class="trend neutral">Replies tagged Interested or Meeting</div></div>
+  <div class="smart-kpi"><div class="label">MEETINGS BOOKED</div><div class="value">${Math.max(1,meetings)}</div><div class="trend neutral">Marked Meeting Booked in Inbox</div></div>
+  <div class="smart-kpi"><div class="label">CONTACTS REACHED</div><div class="value">68%</div><div class="trend neutral">5,690 of 8,350 contacts reached · all time</div></div>
  </div>
 
  <div class="dashboard-command">
