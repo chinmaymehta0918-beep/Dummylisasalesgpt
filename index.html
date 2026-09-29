@@ -1260,7 +1260,7 @@ function inboxPage(){
            <div style="min-width:0;flex:1">
              <div class="thread-top"><span class="thread-name">${t.name}</span><span class="thread-time">${t.time}</span></div>
              <div class="thread-preview">${t.preview}</div>
-             <div class="thread-meta"><span class="badge">${t.account}</span><span class="badge">${t.step}</span>${t.tag?`<span class="tag-badge">${t.tag}</span>`:""}<span class="read-badge">${t.read?"Read":"Unread"}</span></div>
+             <div class="thread-meta"><span class="badge">${t.account}</span><span class="badge">${t.step}</span>${t.read && t.tag?`<span class="tag-badge">${t.tag}</span>`:""}<span class="read-badge">${t.read?"Read":"Unread"}</span></div>
            </div>
          </div>
        </div>`).join("") || `<div style="padding:25px;text-align:center;color:#858a98">No conversations found.</div>`}
