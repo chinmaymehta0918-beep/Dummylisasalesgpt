@@ -1177,6 +1177,13 @@ function markResponse(id,type){
  t.status=type;
  t.sequenceStopped=true;
  t.classification=type;
+ if(type==="Out of Office"){
+   t.sequenceResumeAfterDays=null;
+   t.sequenceResumeScheduledAt=null;
+   render();
+   setTimeout(()=>openResumeSequenceModal(t),50);
+   return;
+ }
  render();
 }
 function resumeSequence(id){
@@ -1215,7 +1222,9 @@ function inboxPage(){
  const thread=inboxThreads.find(x=>x.id===selectedThread)||inboxThreads[0];
  const visible=inboxThreads.filter(x=>{ const statusOk=inboxFilter==="All"||inboxFilter==="Favorites" ? (inboxFilter==="Favorites"?!!inboxFavorites[x.id]:true) : x.status===inboxFilter; const readOk=inboxReadFilter==="All"||(inboxReadFilter==="Unread"&&!x.read)||(inboxReadFilter==="Read"&&x.read); return statusOk&&readOk; });
  const hasReply=thread.messages.some(m=>m.type==="reply");
- const stopped=thread.sequenceStopped||hasReply;
+ const resumePending=thread.sequenceResumeScheduledAt && Date.now()<thread.sequenceResumeScheduledAt;
+ const stopped=thread.sequenceStopped && !thread.sequenceResumeScheduledAt;
+ const isOOO=thread.classification==="Out of Office";
 
  return `<div class="toolbar">
    <div><div class="eyebrow">INBOX</div><h2>Master Inbox</h2>
@@ -1275,7 +1284,7 @@ function inboxPage(){
        </div>
      </div>`:""}
 
-     ${stopped?`<div class="auto-stop"><b>Sequence automatically stopped</b><br>No further emails will be sent to this lead because a reply was received.</div>`:""}
+     ${isOOO && thread.sequenceResumeScheduledAt?`<div class="auto-stop"><b>Out of office</b><br>Sequence will resume after ${thread.sequenceResumeAfterDays} day${thread.sequenceResumeAfterDays===1?"":"s"}.</div>`:stopped?`<div class="auto-stop"><b>Sequence automatically stopped</b><br>No further emails will be sent to this lead because a reply was received.</div>`:""}
 
      <div style="margin-top:20px">
        ${thread.messages.map(m=>`<div class="email-bubble ${m.type==='reply'?'reply':''}">
@@ -1576,6 +1585,8 @@ function openResumeSequenceModal(target){
   const modal=document.getElementById("resumeSequenceModal");
   const input=document.getElementById("resumeSequenceDays");
   if(input) input.value=2;
+  const title=modal?.querySelector("h3");
+  if(title) title.textContent = (target && target.classification==="Out of Office") ? "Resume after out of office" : "Resume sequence";
   if(modal) modal.style.display="flex";
   updateResumeSequenceSummary();
 }
@@ -1602,7 +1613,7 @@ function confirmResumeSequence(){
     resumeSequenceTarget.sequenceStopped=false;
     resumeSequenceTarget.sequenceResumeAfterDays=days;
     resumeSequenceTarget.sequenceResumeScheduledAt=Date.now() + days*24*60*60*1000;
-    if("status" in resumeSequenceTarget && resumeSequenceTarget.status==="Replied"){
+    if("status" in resumeSequenceTarget && (resumeSequenceTarget.status==="Replied" || resumeSequenceTarget.status==="Out of Office")){
       resumeSequenceTarget.status="Active";
     }
   }
