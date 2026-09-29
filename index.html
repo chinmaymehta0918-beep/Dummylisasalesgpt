@@ -305,7 +305,7 @@ function campaignsPage(){
    <div><h3>All Campaigns</h3><div class="sub">Turn campaigns on/off and open any campaign for details.</div></div>
   </div>
   <div style="display:grid;gap:12px">
-   ${campaigns.map((c,i)=>{const completion=campaignCompletion(c);const rr=pct(c.replies,c.sent);return `<div class="panel" style="margin:0;padding:16px;border:1px solid #e5e5ec">
+   ${campaigns.map((c,i)=>{const completion=campaignCompletion(c);const rr=pct(c.replies,c.sent);const isRunning=c.status==="Running";const toggleChecked=isRunning?"checked":"";const toggleLabel=isRunning?"ON":"OFF";return `<div class="panel" style="margin:0;padding:16px;border:1px solid #e5e5ec">
     <div style="display:grid;grid-template-columns:minmax(260px,2fr) 110px 110px 140px 110px;gap:16px;align-items:center">
      <div><div style="font-weight:800;font-size:15px"><a href="#" onclick="openCampaign(event,${i})" style="color:#171923;text-decoration:none;cursor:pointer">${c.name}</a></div>
       <div class="muted" style="margin-top:4px">${c.contacts.toLocaleString()} contacts · ${c.sent.toLocaleString()} sent</div>
