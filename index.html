@@ -318,7 +318,7 @@ function campaignsPage(){
      <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;position:relative">
       <div class="toggle-wrap"><label class="toggle"><input type="checkbox" ${toggleChecked} onchange="toggleCampaign(${i},this.checked)"><span class="slider"></span></label></div>
       <div class="campaign-menu-wrap">
-       <button class="campaign-menu-btn" onclick="toggleCampaignMenu(event,${i})" aria-label="Campaign actions">⋯</button>
+       <button class="campaign-menu-btn" type="button" onclick="toggleCampaignMenu(${i})" aria-label="Campaign actions">⋯</button>
        <div class="campaign-menu" id="campaign-menu-${i}">
         <button onclick="openCampaignSettings(event,${i})">⚙ Campaign settings</button>
         <button onclick="openCampaign(event,${i})">↗ Open campaign</button>
@@ -387,12 +387,12 @@ function toggleCampaign(index,on){
 }
 
 
-function toggleCampaignMenu(event,index){
- event.preventDefault();
- event.stopPropagation();
- document.querySelectorAll(".campaign-menu.open").forEach(el=>el.classList.remove("open"));
+function toggleCampaignMenu(index){
  const menu=document.getElementById("campaign-menu-"+index);
- if(menu) menu.classList.add("open");
+ if(!menu) return;
+ const open=menu.classList.contains("open");
+ document.querySelectorAll(".campaign-menu.open").forEach(el=>el.classList.remove("open"));
+ if(!open) menu.classList.add("open");
 }
 function openCampaignSettings(event,index){
  event.preventDefault();
@@ -412,7 +412,7 @@ function deleteCampaign(event,index){
  else if(selectedCampaign>index) selectedCampaign--;
  render();
 }
-document.addEventListener("click",()=>document.querySelectorAll(".campaign-menu.open").forEach(el=>el.classList.remove("open")));
+
 
 function openCampaign(event,index){
  event.preventDefault();
