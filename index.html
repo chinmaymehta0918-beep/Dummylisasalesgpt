@@ -768,9 +768,9 @@ function dashboardPage(){
  <div class="smart-kpis dashboard-kpis">
   <div class="smart-kpi"><div class="label">EMAILS SENT</div><div class="value">${p.sent.toLocaleString()}</div><div class="trend neutral">${p.label} · all campaigns</div></div>
   <div class="smart-kpi"><div class="label">REPLY RATE</div><div class="value">${reply}%</div><div class="trend neutral">${p.replies.toLocaleString()} replies · ${p.sent.toLocaleString()} sent</div></div>
-  <div class="smart-kpi"><div class="label">INTERESTED REPLIES</div><div class="value">${Math.max(8,Math.round(p.replies*0.008))}</div><div class="trend neutral">Replies tagged Interested or Meeting</div></div>
-  <div class="smart-kpi"><div class="label">MEETINGS BOOKED</div><div class="value">${Math.max(1,meetings)}</div><div class="trend neutral">Marked Meeting Booked in Inbox</div></div>
-  <div class="smart-kpi"><div class="label">CONTACTS REACHED</div><div class="value">68%</div><div class="trend neutral">5,690 of 8,350 contacts reached · all time</div></div>
+  <div class="smart-kpi"><div class="label">INTERESTED REPLIES</div><div class="value">${inboxThreads.filter(t=>t.read && t.classification==="Interested").length.toLocaleString()}</div><div class="trend neutral">Tagged Interested by Lisa</div></div>
+  <div class="smart-kpi"><div class="label">MEETINGS BOOKED</div><div class="value">${inboxThreads.filter(t=>t.meetingBooked===true || t.classification==="Meeting Booked").length.toLocaleString()}</div><div class="trend neutral">Marked Meeting Booked in Inbox</div></div>
+  <div class="smart-kpi"><div class="label">CONTACTS REACHED</div><div class="value">${Math.round((campaigns.reduce((a,c)=>a+c.sent,0)/Math.max(1,campaigns.reduce((a,c)=>a+c.contacts,0)))*100)}%</div><div class="trend neutral">${campaigns.reduce((a,c)=>a+c.sent,0).toLocaleString()} of ${campaigns.reduce((a,c)=>a+c.contacts,0).toLocaleString()} contacts reached · all campaigns</div></div>
  </div>
 
  <div class="dashboard-command">
@@ -1169,12 +1169,12 @@ function clearMeetingBooked(id){
  if(!t)return;
  t.meetingBooked=false;
  t.status="Replied";
- t.classification="Interested";
+ t.classification="";
  t.meetingDate="";
  render();
 }
 function markResponse(id,type){
- const t=inboxThreads.find(x=>x.id===id); if(!t)return;
+ const t=inboxThreads.find(x=>x.id===id); if(!t || !t.read)return;
  t.status=type;
  t.sequenceStopped=true;
  t.classification=type;
