@@ -776,12 +776,25 @@ function dashboardPage(){
     <option value="all">All campaigns</option>${seqCampaigns.map(x=>`<option value="${x}" ${selectedSeq===x?'selected':''}>${x}</option>`).join('')}
    </select>
   </div>
-  <div style="margin-top:16px">
-   ${seqRows.map(x=>{const rate=x.sent?(x.replies/x.sent*100):0;const width=Math.max(5,Math.round(x.sent/maxSeq*100));return `<div style="display:grid;grid-template-columns:95px minmax(120px,1fr) 80px 70px;gap:10px;align-items:center;margin:11px 0">
-    <div><b>${x.step}</b></div><div style="height:10px;background:#ececf1;border-radius:99px;overflow:hidden"><div style="width:${width}%;height:100%;background:#635bff;border-radius:99px"></div></div>
-    <div style="text-align:right">${x.sent.toLocaleString()}</div><div style="text-align:right;font-weight:700">${rate.toFixed(1)}%</div>
-   </div>`}).join('')}
-  </div>
+  <div style="margin-top:16px;display:grid;gap:18px">
+   ${seqCampaigns.filter(name=>selectedSeq==="all"||name===selectedSeq).map(name=>{
+     const campaignRows=seqRows.filter(x=>x.campaign===name);
+     const campaignMax=Math.max(...campaignRows.map(x=>x.sent),1);
+     return `<div style="border:1px solid #e7e8ee;border-radius:12px;padding:15px 16px;background:#fff">
+       <div style="font-weight:800;font-size:13px;margin-bottom:12px">${name}</div>
+       ${campaignRows.map(x=>{
+         const rate=x.sent?(x.replies/x.sent*100):0;
+         const width=Math.max(5,Math.round(x.sent/campaignMax*100));
+         return `<div style="display:grid;grid-template-columns:70px minmax(120px,1fr) 80px 70px;gap:10px;align-items:center;margin:10px 0">
+           <div><b>${x.step}</b></div>
+           <div style="height:9px;background:#ececf1;border-radius:99px;overflow:hidden"><div style="width:${width}%;height:100%;background:#635bff;border-radius:99px"></div></div>
+           <div style="text-align:right;font-size:12px">${x.sent.toLocaleString()}</div>
+           <div style="text-align:right;font-weight:700;font-size:12px">${rate.toFixed(1)}%</div>
+         </div>`;
+       }).join("")}
+     </div>`;
+   }).join("")}
+  </div>  </div>
  </div>
  </div>`;
 }
