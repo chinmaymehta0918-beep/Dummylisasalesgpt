@@ -292,11 +292,12 @@ function campaignsPage(){
    <button class="primary" onclick="go('create')">+ Create Campaign</button>
  </div>
 
- <div class="smart-kpis" style="margin-bottom:16px">
-  <div class="smart-kpi"><div class="label">TOTAL CAMPAIGNS</div><div class="value">${campaigns.length}</div><div class="trend neutral">All campaigns</div></div>
-  <div class="smart-kpi"><div class="label">RUNNING</div><div class="value">${campaigns.filter(c=>c.status==="Running").length}</div><div class="trend neutral">Currently sending · <span style="cursor:pointer;text-decoration:underline" onclick="document.querySelector('button[onclick=\"go(\'campaigns\')\"]')?.click()">View</span></div></div>
-  <div class="smart-kpi"><div class="label">PAUSED</div><div class="value">${campaigns.filter(c=>c.status==="Paused").length}</div><div class="trend neutral">Not sending</div></div>
-  <div class="smart-kpi"><div class="label">TOTAL SENT</div><div class="value">${campaigns.reduce((a,c)=>a+c.sent,0).toLocaleString()}</div><div class="trend neutral">Across campaigns</div></div>
+ <div class="smart-kpis dashboard-kpis" style="margin-bottom:16px">
+  <div class="smart-kpi"><div class="label">EMAILS SENT</div><div class="value">${campaigns.reduce((a,c)=>a+c.sent,0).toLocaleString()}</div><div class="trend neutral">All campaigns</div></div>
+  <div class="smart-kpi"><div class="label">REPLY RATE</div><div class="value">${pct(campaigns.reduce((a,c)=>a+c.replies,0),campaigns.reduce((a,c)=>a+c.sent,0))}%</div><div class="trend neutral">${campaigns.reduce((a,c)=>a+c.replies,0).toLocaleString()} replies · ${campaigns.reduce((a,c)=>a+c.sent,0).toLocaleString()} sent</div></div>
+  <div class="smart-kpi"><div class="label">INTERESTED REPLIES</div><div class="value">${inboxThreads.filter(t=>t.read && t.classification==="Interested").length.toLocaleString()}</div><div class="trend neutral">Tagged Interested by Lisa</div></div>
+  <div class="smart-kpi"><div class="label">MEETINGS BOOKED</div><div class="value">${inboxThreads.filter(t=>t.meetingBooked===true || t.classification==="Meeting Booked").length.toLocaleString()}</div><div class="trend neutral">Marked Meeting Booked in Inbox</div></div>
+  <div class="smart-kpi"><div class="label">CONTACTS REACHED</div><div class="value">${Math.round((campaigns.reduce((a,c)=>a+c.sent,0)/Math.max(1,campaigns.reduce((a,c)=>a+c.contacts,0)))*100)}%</div><div class="trend neutral">${campaigns.reduce((a,c)=>a+c.sent,0).toLocaleString()} of ${campaigns.reduce((a,c)=>a+c.contacts,0).toLocaleString()} contacts reached</div></div>
  </div>
 
  <div class="smart-panel">
