@@ -43,7 +43,7 @@ button,input,select,textarea{font:inherit}.app{display:flex;min-height:100vh}.si
 .detail-box .label{font-size:11px}
 .detail-box .value{font-size:14px;margin-top:5px}
 
-.campaign-menu-wrap{position:relative}.campaign-menu-btn{width:30px;height:30px;border:1px solid #dedfe8;background:#fff;border-radius:8px;font-size:18px;line-height:1;cursor:pointer;color:#5f6472}.campaign-menu-btn:hover{background:#f5f5ff;border-color:#cfcdfc}.campaign-menu{display:none;position:absolute;right:0;top:36px;width:190px;background:#fff;border:1px solid #e2e3ea;border-radius:10px;padding:6px;box-shadow:0 14px 30px rgba(20,22,32,.14);z-index:100}.campaign-menu.open{display:block}.campaign-menu button{display:block;width:100%;border:0;background:transparent;text-align:left;padding:9px 10px;border-radius:7px;font-size:12px;cursor:pointer;color:#303342}.campaign-menu button:hover{background:#f5f5ff}.campaign-menu button.danger{color:#b64242}.campaign-menu button.danger:hover{background:#fff0f0}.priority-options{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.campaign-menu-wrap{position:relative}.campaign-menu-btn{width:30px;height:30px;border:1px solid #dedfe8;background:#fff;border-radius:8px;font-size:18px;line-height:1;cursor:pointer;color:#5f6472}.campaign-menu-btn:hover{background:#f5f5ff;border-color:#cfcdfc}.campaign-menu{display:none;position:absolute;right:0;top:36px;width:190px;background:#fff;border:1px solid #e2e3ea;border-radius:10px;padding:6px;box-shadow:0 14px 30px rgba(20,22,32,.14);z-index:9999;pointer-events:auto}.campaign-menu.open{display:block}.campaign-menu button{display:block;width:100%;border:0;background:transparent;text-align:left;padding:9px 10px;border-radius:7px;font-size:12px;cursor:pointer;color:#303342}.campaign-menu button:hover{background:#f5f5ff}.campaign-menu button.danger{color:#b64242}.campaign-menu button.danger:hover{background:#fff0f0}.priority-options{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .priority-option{border:1px solid #dedfe8;background:#fff;border-radius:8px;padding:9px 12px;font-size:12px;cursor:pointer}
 .priority-option.active{background:#635bff;color:#fff;border-color:#635bff}
 .queue-note{padding:13px 15px;background:#f5f5ff;border:1px solid #e2e0ff;border-radius:9px;font-size:12px;color:#55596b;margin-bottom:14px}
@@ -318,7 +318,7 @@ function campaignsPage(){
      <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;position:relative">
       <div class="toggle-wrap"><label class="toggle"><input type="checkbox" ${toggleChecked} onchange="toggleCampaign(${i},this.checked)"><span class="slider"></span></label></div>
       <div class="campaign-menu-wrap">
-       <button class="campaign-menu-btn" type="button" onclick="toggleCampaignMenu(${i})" aria-label="Campaign actions">⋯</button>
+       <button class="campaign-menu-btn" type="button" data-campaign-menu="${i}" aria-label="Campaign actions">⋯</button>
        <div class="campaign-menu" id="campaign-menu-${i}">
         <button onclick="openCampaignSettings(event,${i})">⚙ Campaign settings</button>
         <button onclick="openCampaign(event,${i})">↗ Open campaign</button>
@@ -390,10 +390,23 @@ function toggleCampaign(index,on){
 function toggleCampaignMenu(index){
  const menu=document.getElementById("campaign-menu-"+index);
  if(!menu) return;
- const open=menu.classList.contains("open");
  document.querySelectorAll(".campaign-menu.open").forEach(el=>el.classList.remove("open"));
- if(!open) menu.classList.add("open");
+ menu.classList.add("open");
 }
+document.addEventListener("click",function(e){
+ const btn=e.target.closest(".campaign-menu-btn");
+ if(btn){
+   e.preventDefault(); e.stopPropagation();
+   const index=btn.getAttribute("data-campaign-menu");
+   const menu=document.getElementById("campaign-menu-"+index);
+   if(!menu) return;
+   const wasOpen=menu.classList.contains("open");
+   document.querySelectorAll(".campaign-menu.open").forEach(el=>el.classList.remove("open"));
+   if(!wasOpen) menu.classList.add("open");
+   return;
+ }
+ if(!e.target.closest(".campaign-menu")) document.querySelectorAll(".campaign-menu.open").forEach(el=>el.classList.remove("open"));
+});
 function openCampaignSettings(event,index){
  event.preventDefault();
  event.stopPropagation();
