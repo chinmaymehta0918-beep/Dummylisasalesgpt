@@ -332,10 +332,31 @@ function renderCampaignSequenceTable(){
  const select=document.getElementById("campaignSequenceFilter");
  if(!host) return;
  const selected=select?.value||"all";
- const rows=dashboardSequenceData.filter(x=>selected==="all"||x.campaign===selected);
- const groups={};
- rows.forEach(x=>{const k=x.campaign+"|"+x.step;groups[k]=x;});
- host.innerHTML=`<div style="overflow:auto"><table class="table"><thead><tr><th>Campaign</th><th>Step</th><th>Sent</th><th>Reply Rate</th></tr></thead><tbody>${rows.map(x=>`<tr><td><b>${x.campaign}</b></td><td>${x.step}</td><td>${x.sent.toLocaleString()}</td><td><b>${(x.replies/x.sent*100).toFixed(1)}%</b></td></tr>`).join("")}</tbody></table></div>`;
+ const names=[...new Set(dashboardSequenceData.map(x=>x.campaign))].filter(name=>selected==="all"||name===selected);
+ host.innerHTML=names.map(name=>{
+   const rows=dashboardSequenceData.filter(x=>x.campaign===name);
+   const totalSent=rows.reduce((a,x)=>a+x.sent,0);
+   const totalReplies=rows.reduce((a,x)=>a+x.replies,0);
+   return `<div style="border:1px solid #e5e6ec;border-radius:14px;padding:18px;margin-bottom:14px;background:#fff">
+     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px">
+       <div><div style="font-size:15px;font-weight:800">${name}</div><div class="small-help">${rows.length} email steps · ${totalSent.toLocaleString()} emails sent</div></div>
+       <div style="text-align:right"><div class="small-help">OVERALL REPLY RATE</div><b style="font-size:16px">${(totalReplies/totalSent*100).toFixed(1)}%</b></div>
+     </div>
+     <div style="display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px">
+       ${rows.map((x,i)=>{
+         const rate=x.sent?(x.replies/x.sent*100):0;
+         const titles=["Initial outreach","Follow-up","Value follow-up","Final follow-up"];
+         return `<div style="border:1px solid #ececf1;border-radius:10px;padding:13px;background:#fafafd">
+           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b>Step ${i+1}</b><span class="small-help">${titles[i]||"Follow-up"}</span></div>
+           <div style="font-size:20px;font-weight:800">${rate.toFixed(1)}%</div>
+           <div class="small-help">reply rate</div>
+           <div style="margin-top:10px;height:7px;background:#ececf1;border-radius:99px;overflow:hidden"><div style="height:100%;width:${Math.min(100,Math.max(4,rate*4))}%;background:#635bff"></div></div>
+           <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px"><span>${x.sent.toLocaleString()} sent</span><b>${x.replies.toLocaleString()} replies</b></div>
+         </div>`;
+       }).join("")}
+     </div>
+   </div>`;
+ }).join("");
 }
 function initCampaignSequence(){
  const select=document.getElementById("campaignSequenceFilter");
